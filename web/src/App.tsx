@@ -4,18 +4,19 @@ import { supabase } from './supabase'
 import { configureApi, getMe, type Me } from './api'
 import Login from './Login'
 import Onboarding from './Onboarding'
+import Chat from './Chat'
 import Dashboard from './Dashboard'
 import Playground from './Playground'
 import Settings from './Settings'
 
-type View = 'dashboard' | 'playground' | 'settings'
+type View = 'chat' | 'dashboard' | 'playground' | 'settings'
 
 export default function App() {
   const [session, setSession] = useState<Session | null>(null)
   const [ready, setReady] = useState(false)
   const [me, setMe] = useState<Me | null>(null)
   const [orgId, setOrgId] = useState<string | null>(null)
-  const [view, setView] = useState<View>('dashboard')
+  const [view, setView] = useState<View>('chat')
   const [loadingMe, setLoadingMe] = useState(false)
 
   // Track the Supabase session.
@@ -81,6 +82,9 @@ export default function App() {
         </div>
         <div className="row-between" style={{ gap: 10 }}>
           <nav className="nav">
+            <button className={view === 'chat' ? 'active' : ''} onClick={() => setView('chat')}>
+              chat
+            </button>
             <button
               className={view === 'dashboard' ? 'active' : ''}
               onClick={() => setView('dashboard')}
@@ -130,6 +134,7 @@ export default function App() {
         </span>
       </div>
 
+      {view === 'chat' && <Chat />}
       {view === 'dashboard' && <Dashboard />}
       {view === 'playground' && <Playground />}
       {view === 'settings' && <Settings />}

@@ -380,6 +380,157 @@ tr.clickrow:hover td {
   color: var(--cobalt);
 }
 
+/* Chat workspace. */
+.chat {
+  display: grid;
+  grid-template-columns: 230px 1fr;
+  gap: 18px;
+  min-height: 72vh;
+}
+.chat-side {
+  border: var(--border);
+  background: var(--panel);
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+.conv-list {
+  margin-top: 8px;
+  overflow-y: auto;
+  flex: 1;
+}
+.conv {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border: 2px solid var(--ink);
+  background: var(--paper);
+  padding: 8px 10px;
+  margin-bottom: 8px;
+  cursor: pointer;
+  font-size: 13px;
+}
+.conv.active {
+  background: var(--lime);
+}
+.conv-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.conv-del {
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-size: 18px;
+  line-height: 1;
+  padding: 0 2px;
+  color: var(--ink);
+  opacity: 0.5;
+}
+.conv-del:hover {
+  opacity: 1;
+  color: var(--coral);
+}
+.chat-main {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+.thread {
+  flex: 1;
+  overflow-y: auto;
+  border: var(--border);
+  background: var(--paper);
+  padding: 16px;
+  margin: 8px 0 12px;
+}
+.empty {
+  text-align: center;
+  padding: 48px 16px;
+}
+.bubble {
+  border: var(--border);
+  padding: 12px 14px;
+  margin-bottom: 12px;
+  background: var(--panel);
+}
+.bubble.user {
+  background: var(--paper);
+}
+.bubble.assistant {
+  border-left: 6px solid var(--lime);
+}
+.bubble-role {
+  margin: 0 0 6px;
+}
+.bubble-text {
+  white-space: pre-wrap;
+}
+.bubble-actions {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: 10px;
+}
+.chip {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  text-transform: lowercase;
+  background: var(--paper);
+  color: var(--ink);
+  border: 2px solid var(--ink);
+  padding: 3px 8px;
+  cursor: pointer;
+}
+.chip:hover {
+  background: var(--lime);
+}
+.chip.on {
+  background: var(--lime);
+}
+.chip.on-bad {
+  background: var(--coral);
+}
+.autopsy {
+  margin-top: 10px;
+  border: 2px solid var(--ink);
+  background: var(--paper);
+  padding: 12px;
+}
+.similar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  border: 2px solid var(--ink);
+  background: var(--marigold);
+  padding: 8px 10px;
+  margin-bottom: 10px;
+}
+.composer {
+  border: var(--border);
+  background: var(--panel);
+  padding: 12px;
+}
+.composer textarea.input {
+  min-height: 64px;
+  resize: vertical;
+  margin-bottom: 10px;
+}
+.composer-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+@media (max-width: 720px) {
+  .chat {
+    grid-template-columns: 1fr;
+  }
+}
+
 /* Markdown output rendering inside the dark playground panel. */
 .md-output {
   font-family: var(--font-body);

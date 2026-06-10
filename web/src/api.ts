@@ -112,6 +112,107 @@ export const createKey = (name: string) =>
 export const revokeKey = (id: string) =>
   call<void>(`/api/keys/${id}/revoke`, { method: 'POST' })
 
+// --- Chat workspace ---
+export interface Conversation {
+  id: string
+  title: string
+  updated_at: string
+}
+export interface ChatMessage {
+  id: string
+  role: string
+  content: string
+  feedback: number | null
+  created_at: string
+}
+export interface ConversationDetail {
+  id: string
+  title: string
+  messages: ChatMessage[]
+}
+export interface SimilarItem {
+  content: string
+  conversation_id: string
+  title: string
+}
+
+export const listConversations = () => call<Conversation[]>('/api/chat/conversations')
+export const getConversation = (id: string) =>
+  call<ConversationDetail>(`/api/chat/conversations/${id}`)
+export const deleteConversation = (id: string) =>
+  call<void>(`/api/chat/conversations/${id}`, { method: 'DELETE' })
+export const renameConversation = (id: string, title: string) =>
+  call<void>(`/api/chat/conversations/${id}/rename`, {
+    method: 'POST',
+    body: JSON.stringify({ title }),
+  })
+export const messageFeedback = (id: string, rating: number) =>
+  call<void>(`/api/chat/messages/${id}/feedback`, {
+    method: 'POST',
+    body: JSON.stringify({ rating }),
+  })
+export const findSimilar = (content: string) =>
+  call<SimilarItem[]>('/api/chat/similar', { method: 'POST', body: JSON.stringify({ content }) })
+export const improvePrompt = (prompt: string) =>
+  call<{ improved: string }>('/api/improve', { method: 'POST', body: JSON.stringify({ prompt }) })
+export const autopsy = (prompt: string, response: string) =>
+  call<{ markdown: string }>('/api/autopsy', {
+    method: 'POST',
+    body: JSON.stringify({ prompt, response }),
+  })
+
+export async function sendChat(
+  content: string,
+  conversationId: string | null,
+  model: string,
+  onToken: (t: string) => void,
+): Promise<{ conversationId: string; text: string }> {
+  const { token, org, apiUrl } = currentAuth()
+  const resp = await fetch(`${apiUrl}/api/chat/send`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+      'X-Replay-Org': org,
+    },
+    body: JSON.stringify({ content, conversation_id: conversationId, model }),
+  })
+  if (!resp.ok || !resp.body) {
+    throw new Error(`${resp.status}: ${await resp.text()}`)
+  }
+  const convId = resp.headers.get('X-Conversation-Id') ?? conversationId ?? ''
+  const reader = resp.body.getReader()
+  const dec = new TextDecoder()
+  let buf = ''
+  let text = ''
+  for (;;) {
+    const { done, value } = await reader.read()
+    if (done) break
+    buf += dec.decode(value, { stream: true })
+    let idx: number
+    while ((idx = buf.indexOf('\n\n')) >= 0) {
+      const evt = buf.slice(0, idx)
+      buf = buf.slice(idx + 2)
+      for (const line of evt.split('\n')) {
+        if (!line.startsWith('data:')) continue
+        const p = line.slice(5).trim()
+        if (p === '[DONE]') continue
+        try {
+          const d = JSON.parse(p)
+          const t = d?.choices?.[0]?.delta?.content
+          if (t) {
+            text += t
+            onToken(t)
+          }
+        } catch {
+          // ignore keepalive lines
+        }
+      }
+    }
+  }
+  return { conversationId: convId, text }
+}
+
 export const listProviderKeys = () => call<ProviderKey[]>('/api/provider-keys')
 export const addProviderKey = (provider: string, label: string, secret: string) =>
   call<ProviderKey>('/api/provider-keys', {

@@ -261,6 +261,40 @@ class Alert(Base):
     acknowledged_at: Mapped[dt.datetime | None] = mapped_column(DateTime(timezone=True))
 
 
+class Conversation(Base):
+    """A chat thread in the consumer workspace. Scoped to an org and a user."""
+
+    __tablename__ = "conversations"
+    __table_args__ = (Index("ix_conversations_org_user", "org_id", "user_id", "updated_at"),)
+
+    id: Mapped[uuid.UUID] = _uuid_pk()
+    org_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
+    user_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
+    title: Mapped[str] = mapped_column(Text, nullable=False, server_default=text("'new chat'"))
+    created_at: Mapped[dt.datetime] = _now()
+    updated_at: Mapped[dt.datetime] = _now()
+
+
+class Message(Base):
+    """One message in a conversation. The embedding column (pgvector) is created
+    in the migration but not mapped here; it is read and written via raw SQL.
+    """
+
+    __tablename__ = "messages"
+    __table_args__ = (Index("ix_messages_conversation", "conversation_id", "created_at"),)
+
+    id: Mapped[uuid.UUID] = _uuid_pk()
+    org_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
+    conversation_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("conversations.id", ondelete="CASCADE"), nullable=False
+    )
+    role: Mapped[str] = mapped_column(Text, nullable=False)
+    content: Mapped[str] = mapped_column(Text, nullable=False)
+    request_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True))
+    feedback: Mapped[int | None] = mapped_column(Integer)
+    created_at: Mapped[dt.datetime] = _now()
+
+
 # Tenant tables that must carry an org_isolation RLS policy. Used by the
 # migration and by an isolation test that asserts coverage.
 TENANT_TABLES: tuple[str, ...] = (
@@ -275,6 +309,8 @@ TENANT_TABLES: tuple[str, ...] = (
     "eval_results",
     "budgets",
     "alerts",
+    "conversations",
+    "messages",
 )
 
 # Imported names kept for callers and to satisfy linters about re-exports.
@@ -293,5 +329,7 @@ __all__ = [
     "EvalResult",
     "Budget",
     "Alert",
+    "Conversation",
+    "Message",
     "TENANT_TABLES",
 ]

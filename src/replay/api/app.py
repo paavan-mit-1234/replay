@@ -6,6 +6,8 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from replay.api import (
+    routes_assist,
+    routes_chat,
     routes_health,
     routes_keys,
     routes_orgs,
@@ -28,6 +30,7 @@ def create_app() -> FastAPI:
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
+        expose_headers=["X-Conversation-Id"],
     )
 
     @app.get("/", tags=["meta"])
@@ -55,6 +58,8 @@ def create_app() -> FastAPI:
     app.include_router(routes_providers.router, prefix="/api", tags=["provider-keys"])
     app.include_router(routes_requests.router, prefix="/api", tags=["requests"])
     app.include_router(routes_playground.router, prefix="/api", tags=["playground"])
+    app.include_router(routes_chat.router, prefix="/api", tags=["chat"])
+    app.include_router(routes_assist.router, prefix="/api", tags=["assist"])
 
     return app
 
