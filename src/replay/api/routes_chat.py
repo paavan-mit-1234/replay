@@ -31,6 +31,11 @@ from replay.vault.keys import get_active_secret
 
 router = APIRouter()
 
+TITLE_SYSTEM = (
+    "Write a short, specific title (3 to 6 words) for this chat based on the "
+    "question and answer. Return only the title: no quotes, no punctuation at the end."
+)
+
 
 # --- schemas -----------------------------------------------------------------
 
@@ -235,6 +240,7 @@ async def chat_send(
                 .order_by(Message.created_at)
             )
         ).all()
+        is_new = len(history) == 0
         user_msg = Message(
             org_id=org_id, conversation_id=conv_id, role="user", content=body.content
         )
@@ -319,6 +325,18 @@ async def chat_send(
                 .where(Conversation.id == conv_id)
                 .values(updated_at=dt.datetime.now(dt.UTC))
             )
+        # Generate a concise title for a brand new conversation.
+        if is_new and state.text:
+            title = (
+                await assist.complete(
+                    secret, TITLE_SYSTEM, f"Question: {body.content}\n\nAnswer: {state.text[:400]}"
+                )
+            ).strip().strip('"')[:80]
+            if title:
+                async with org_session(org_id) as session:
+                    await session.execute(
+                        update(Conversation).where(Conversation.id == conv_id).values(title=title)
+                    )
         # Embed the user turn for recurring-prompt detection (best effort).
         vec = await assist.embed(secret, body.content)
         if vec:
