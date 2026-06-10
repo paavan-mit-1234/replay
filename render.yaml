@@ -1,0 +1,30 @@
+# Render Blueprint for the Replay API. In Render: New + -> Blueprint -> pick
+# this repo. It builds the Dockerfile and creates a free web service. Fill the
+# secret env vars (marked sync: false) in the Render dashboard.
+services:
+  - type: web
+    name: replay-api
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    plan: free
+    healthCheckPath: /health
+    envVars:
+      # Secrets: set these in the Render dashboard (copy from your local .env).
+      - key: REPLAY_DATABASE_URL
+        sync: false
+      - key: REPLAY_VAULT_KEY
+        sync: false
+      # Set after the dashboard is deployed: the Vercel URL (comma separated ok).
+      - key: REPLAY_CORS_ORIGINS
+        sync: false
+      # Public, safe to commit.
+      - key: SUPABASE_URL
+        value: https://zlctyusgfmiveiymovvk.supabase.co
+      - key: SUPABASE_JWKS_URL
+        value: https://zlctyusgfmiveiymovvk.supabase.co/auth/v1/.well-known/jwks.json
+      - key: SUPABASE_JWT_AUD
+        value: authenticated
+      - key: REPLAY_RETENTION_DAYS
+        value: "30"
+      - key: REPLAY_LOG_LEVEL
+        value: INFO
