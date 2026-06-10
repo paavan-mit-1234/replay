@@ -3,7 +3,7 @@ import { supabase } from './supabase'
 
 type Mode = 'signin' | 'signup' | 'reset'
 
-export default function Login() {
+export default function Login({ onBack }: { onBack?: () => void }) {
   const [mode, setMode] = useState<Mode>('signin')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -53,7 +53,13 @@ export default function Login() {
         <div className="wordmark">
           REPLAY<span className="dot">.</span>
         </div>
-        <div className="kicker">transport / sign in</div>
+        {onBack ? (
+          <button className="linklike" onClick={onBack}>
+            back to home
+          </button>
+        ) : (
+          <div className="kicker">transport / sign in</div>
+        )}
       </div>
 
       <div className="panel" style={{ maxWidth: 460 }}>

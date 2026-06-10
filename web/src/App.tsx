@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import type { Session } from '@supabase/supabase-js'
 import { supabase } from './supabase'
 import { configureApi, getMe, type Me } from './api'
+import Landing from './Landing'
 import Login from './Login'
 import Onboarding from './Onboarding'
 import Chat from './Chat'
@@ -17,6 +18,7 @@ export default function App() {
   const [me, setMe] = useState<Me | null>(null)
   const [orgId, setOrgId] = useState<string | null>(null)
   const [view, setView] = useState<View>('chat')
+  const [authScreen, setAuthScreen] = useState<'landing' | 'login'>('landing')
   const [loadingMe, setLoadingMe] = useState(false)
 
   // Track the Supabase session.
@@ -59,7 +61,13 @@ export default function App() {
   }, [session, orgId])
 
   if (!ready) return null
-  if (!session) return <Login />
+  if (!session) {
+    return authScreen === 'login' ? (
+      <Login onBack={() => setAuthScreen('landing')} />
+    ) : (
+      <Landing onStart={() => setAuthScreen('login')} />
+    )
+  }
   if (loadingMe && !me)
     return (
       <div className="app">
