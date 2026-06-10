@@ -1,0 +1,25 @@
+# python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+
+# env and secrets
+.env
+*.local
+
+# build
+dist/
+build/
+
+# node (web dashboard)
+web/node_modules/
+web/dist/
+
+# os
+.DS_Store
+Thumbs.db
