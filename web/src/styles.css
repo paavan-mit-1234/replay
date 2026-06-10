@@ -460,10 +460,16 @@ tr.clickrow:hover td {
   background: var(--paper);
 }
 .bubble.assistant {
+  background: var(--ink);
+  color: var(--paper);
   border-left: 6px solid var(--lime);
 }
 .bubble-role {
   margin: 0 0 6px;
+}
+.bubble.assistant .bubble-role {
+  color: var(--lime);
+  opacity: 0.85;
 }
 .bubble-text {
   white-space: pre-wrap;

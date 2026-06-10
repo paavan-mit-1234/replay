@@ -191,7 +191,7 @@ export default function Chat() {
             <div key={m.id} className={`bubble ${m.role}`}>
               <div className="bubble-role kicker">{m.role === 'user' ? 'you' : 'ai'}</div>
               {m.role === 'assistant' ? (
-                <div className="md-output md-light">
+                <div className="md-output">
                   <ReactMarkdown>{m.content}</ReactMarkdown>
                 </div>
               ) : (
@@ -232,7 +232,7 @@ export default function Chat() {
               </div>
               <div className="bubble assistant">
                 <div className="bubble-role kicker">ai</div>
-                <div className="md-output md-light">
+                <div className="md-output">
                   {streamText ? (
                     <ReactMarkdown>{streamText}</ReactMarkdown>
                   ) : (
