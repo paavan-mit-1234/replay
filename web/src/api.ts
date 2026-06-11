@@ -101,9 +101,36 @@ export interface RequestDetail extends RequestRow {
   cache_write_tokens: number | null
 }
 
-export const getStats = () => call<Stats>('/api/stats')
-export const listRequests = (limit = 40) =>
-  call<RequestRow[]>(`/api/requests?limit=${limit}`)
+export interface Filters {
+  since?: string | null
+  model?: string | null
+  errorsOnly?: boolean
+}
+
+function filterQuery(f: Filters, extra: Record<string, string | number> = {}): string {
+  const p = new URLSearchParams()
+  if (f.since) p.set('since', f.since)
+  if (f.model) p.set('model', f.model)
+  if (f.errorsOnly) p.set('errors_only', 'true')
+  for (const [k, v] of Object.entries(extra)) p.set(k, String(v))
+  const s = p.toString()
+  return s ? `?${s}` : ''
+}
+
+export interface TimeBucket {
+  bucket: string
+  requests: number
+  spend_usd: number
+  error_count: number
+  median_latency_ms: number | null
+}
+
+export const getStats = (f: Filters = {}) => call<Stats>(`/api/stats${filterQuery(f)}`)
+export const listRequests = (f: Filters = {}, limit = 40) =>
+  call<RequestRow[]>(`/api/requests${filterQuery(f, { limit })}`)
+export const getTimeseries = (f: Filters = {}, bucket: 'hour' | 'day' = 'day') =>
+  call<TimeBucket[]>(`/api/timeseries${filterQuery(f, { bucket })}`)
+export const listModels = () => call<string[]>('/api/models')
 export const getRequest = (id: string) => call<RequestDetail>(`/api/requests/${id}`)
 
 export const listKeys = () => call<ApiKey[]>('/api/keys')

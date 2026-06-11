@@ -98,3 +98,11 @@ class StatsOut(BaseModel):
     error_count: int
     error_rate: float
     median_latency_ms: int | None
+
+
+class TimeBucket(BaseModel):
+    bucket: dt.datetime
+    requests: int
+    spend_usd: float
+    error_count: int
+    median_latency_ms: int | None

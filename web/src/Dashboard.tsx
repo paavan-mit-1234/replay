@@ -1,7 +1,79 @@
-import { useCallback, useEffect, useState } from 'react'
-import { getStats, listRequests, type RequestRow, type Stats } from './api'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import {
+  getStats,
+  getTimeseries,
+  listModels,
+  listRequests,
+  type Filters,
+  type RequestRow,
+  type Stats,
+  type TimeBucket,
+} from './api'
 import Budget from './Budget'
+import Charts from './Charts'
 import RequestDetailView from './RequestDetailView'
+
+type Range = '24h' | '7d' | '30d' | 'all'
+
+const RANGES: { key: Range; label: string; hours: number | null; bucket: 'hour' | 'day' }[] = [
+  { key: '24h', label: '24h', hours: 24, bucket: 'hour' },
+  { key: '7d', label: '7d', hours: 24 * 7, bucket: 'day' },
+  { key: '30d', label: '30d', hours: 24 * 30, bucket: 'day' },
+  { key: 'all', label: 'all', hours: null, bucket: 'day' },
+]
+
+function FilterBar({
+  range,
+  setRange,
+  model,
+  setModel,
+  models,
+  errorsOnly,
+  setErrorsOnly,
+}: {
+  range: Range
+  setRange: (r: Range) => void
+  model: string
+  setModel: (m: string) => void
+  models: string[]
+  errorsOnly: boolean
+  setErrorsOnly: (v: boolean) => void
+}) {
+  return (
+    <div className="filterbar">
+      <div className="seg">
+        {RANGES.map((r) => (
+          <button
+            key={r.key}
+            className={`seg__btn ${range === r.key ? 'on' : ''}`}
+            onClick={() => setRange(r.key)}
+          >
+            {r.label}
+          </button>
+        ))}
+      </div>
+      <select
+        className="input"
+        style={{ width: 'auto', padding: '6px 28px 6px 10px' }}
+        value={model}
+        onChange={(e) => setModel(e.target.value)}
+      >
+        <option value="">all models</option>
+        {models.map((m) => (
+          <option key={m} value={m}>
+            {m}
+          </option>
+        ))}
+      </select>
+      <button
+        className={`seg__btn ${errorsOnly ? 'on' : ''}`}
+        onClick={() => setErrorsOnly(!errorsOnly)}
+      >
+        errors only
+      </button>
+    </div>
+  )
+}
 
 function fmtCost(v: number | null): string {
   return v === null ? '-' : v.toFixed(6)
@@ -109,24 +181,54 @@ function Stream({ rows, onSelect }: { rows: RequestRow[]; onSelect: (id: string)
 export default function Dashboard() {
   const [stats, setStats] = useState<Stats | null>(null)
   const [rows, setRows] = useState<RequestRow[]>([])
+  const [series, setSeries] = useState<TimeBucket[]>([])
+  const [models, setModels] = useState<string[]>([])
   const [error, setError] = useState<string | null>(null)
   const [live, setLive] = useState(true)
   const [selected, setSelected] = useState<string | null>(null)
 
+  const [range, setRange] = useState<Range>('7d')
+  const [model, setModel] = useState('')
+  const [errorsOnly, setErrorsOnly] = useState(false)
+
+  const rangeDef = RANGES.find((r) => r.key === range) ?? RANGES[1]
+  const since =
+    rangeDef.hours != null
+      ? new Date(Date.now() - rangeDef.hours * 3600_000).toISOString()
+      : null
+  // Primitive deps so the poller is stable across renders.
+  const fkey = `${since ?? ''}|${model}|${errorsOnly}|${rangeDef.bucket}`
+  // Drop responses from a superseded filter so a slow reply cannot clobber a
+  // newer one (filters change faster than the 3s poll completes).
+  const seq = useRef(0)
+
   const poll = useCallback(async () => {
+    const mine = ++seq.current
     try {
-      const [s, r] = await Promise.all([getStats(), listRequests(40)])
+      const f: Filters = { since, model: model || null, errorsOnly }
+      const [s, r, t] = await Promise.all([
+        getStats(f),
+        listRequests(f, 40),
+        getTimeseries(f, rangeDef.bucket),
+      ])
+      if (mine !== seq.current) return
       setStats(s)
       setRows(r)
+      setSeries(t)
       setError(null)
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e))
+      if (mine === seq.current) setError(e instanceof Error ? e.message : String(e))
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fkey])
+
+  useEffect(() => {
+    listModels().then(setModels).catch(() => {})
   }, [])
 
   useEffect(() => {
-    if (!live) return
     poll()
+    if (!live) return
     const id = setInterval(poll, 3000)
     return () => clearInterval(id)
   }, [live, poll])
@@ -139,7 +241,17 @@ export default function Dashboard() {
         </div>
       )}
       <Budget />
+      <FilterBar
+        range={range}
+        setRange={setRange}
+        model={model}
+        setModel={setModel}
+        models={models}
+        errorsOnly={errorsOnly}
+        setErrorsOnly={setErrorsOnly}
+      />
       <Gauges stats={stats} />
+      <Charts data={series} />
       <div className="section-head">
         <div>
           <div className="kicker">signal / transport</div>

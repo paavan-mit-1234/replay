@@ -1,37 +1,72 @@
-"""Request log listing, detail, and cost summary."""
+"""Request log listing, detail, stats, charts, and cost summary.
+
+Stats, the request stream, and the time series all accept the same filters
+(time range, model, provider, errors only) so the dashboard can drive them from
+one set of controls.
+"""
 
 from __future__ import annotations
 
 import datetime as dt
 import uuid
-from typing import Annotated
+from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from sqlalchemy import func, select
+from sqlalchemy import Select, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from replay.api.schemas import CostBucket, RequestDetail, RequestOut, StatsOut
+from replay.api.schemas import (
+    CostBucket,
+    RequestDetail,
+    RequestOut,
+    StatsOut,
+    TimeBucket,
+)
 from replay.auth.deps import management_session
 from replay.db.models import Request
 
 router = APIRouter()
+
+_ERROR_PRED = (Request.status_code >= 400) | (Request.error.isnot(None))
+
+
+def _apply_filters(
+    stmt: Select[Any],
+    *,
+    since: dt.datetime | None,
+    model: str | None,
+    provider: str | None,
+    errors_only: bool,
+) -> Select[Any]:
+    if since:
+        stmt = stmt.where(Request.created_at >= since)
+    if model:
+        stmt = stmt.where(Request.model == model)
+    if provider:
+        stmt = stmt.where(Request.provider == provider)
+    if errors_only:
+        stmt = stmt.where(_ERROR_PRED)
+    return stmt
 
 
 @router.get("/stats", response_model=StatsOut)
 async def stats(
     session: Annotated[AsyncSession, Depends(management_session)],
     since: dt.datetime | None = None,
+    model: str | None = None,
+    provider: str | None = None,
+    errors_only: bool = False,
 ) -> StatsOut:
     """Headline gauges: spend, request count, error rate, median latency."""
-    error_pred = (Request.status_code >= 400) | (Request.error.isnot(None))
     stmt = select(
         func.coalesce(func.sum(Request.cost_usd), 0).label("spend"),
         func.count().label("n"),
-        func.count().filter(error_pred).label("errors"),
+        func.count().filter(_ERROR_PRED).label("errors"),
         func.percentile_cont(0.5).within_group(Request.latency_ms).label("median_ms"),
     )
-    if since:
-        stmt = stmt.where(Request.created_at >= since)
+    stmt = _apply_filters(
+        stmt, since=since, model=model, provider=provider, errors_only=errors_only
+    )
     row = (await session.execute(stmt)).one()
     n = int(row.n)
     errors = int(row.errors)
@@ -45,18 +80,65 @@ async def stats(
     )
 
 
+@router.get("/models", response_model=list[str])
+async def list_models(
+    session: Annotated[AsyncSession, Depends(management_session)],
+) -> list[str]:
+    """Distinct models seen, for the dashboard filter."""
+    rows = (
+        await session.execute(select(Request.model).distinct().order_by(Request.model))
+    ).scalars()
+    return list(rows)
+
+
+@router.get("/timeseries", response_model=list[TimeBucket])
+async def timeseries(
+    session: Annotated[AsyncSession, Depends(management_session)],
+    since: dt.datetime | None = None,
+    bucket: str = Query(default="day", pattern="^(hour|day)$"),
+    model: str | None = None,
+    provider: str | None = None,
+    errors_only: bool = False,
+) -> list[TimeBucket]:
+    """Spend, volume, errors, and median latency bucketed over time."""
+    bucket_col = func.date_trunc(bucket, Request.created_at).label("bucket")
+    stmt = select(
+        bucket_col,
+        func.count().label("requests"),
+        func.coalesce(func.sum(Request.cost_usd), 0).label("spend"),
+        func.count().filter(_ERROR_PRED).label("errors"),
+        func.percentile_cont(0.5).within_group(Request.latency_ms).label("median_ms"),
+    )
+    stmt = _apply_filters(
+        stmt, since=since, model=model, provider=provider, errors_only=errors_only
+    )
+    stmt = stmt.group_by(bucket_col).order_by(bucket_col)
+    rows = (await session.execute(stmt)).all()
+    return [
+        TimeBucket(
+            bucket=r.bucket,
+            requests=int(r.requests),
+            spend_usd=float(r.spend),
+            error_count=int(r.errors),
+            median_latency_ms=int(r.median_ms) if r.median_ms is not None else None,
+        )
+        for r in rows
+    ]
+
+
 @router.get("/requests", response_model=list[RequestOut])
 async def list_requests(
     session: Annotated[AsyncSession, Depends(management_session)],
     model: str | None = None,
+    provider: str | None = None,
+    errors_only: bool = False,
     since: dt.datetime | None = None,
     limit: int = Query(default=50, ge=1, le=500),
 ) -> list[RequestOut]:
     stmt = select(Request).order_by(Request.created_at.desc()).limit(limit)
-    if model:
-        stmt = stmt.where(Request.model == model)
-    if since:
-        stmt = stmt.where(Request.created_at >= since)
+    stmt = _apply_filters(
+        stmt, since=since, model=model, provider=provider, errors_only=errors_only
+    )
     rows = (await session.execute(stmt)).scalars()
     return [
         RequestOut(
