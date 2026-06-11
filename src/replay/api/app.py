@@ -9,6 +9,7 @@ from replay.api import (
     routes_assist,
     routes_budget,
     routes_chat,
+    routes_evals,
     routes_health,
     routes_insights,
     routes_keys,
@@ -66,6 +67,7 @@ def create_app() -> FastAPI:
     app.include_router(routes_prompts.router, prefix="/api", tags=["prompts"])
     app.include_router(routes_insights.router, prefix="/api", tags=["insights"])
     app.include_router(routes_budget.router, prefix="/api", tags=["budget"])
+    app.include_router(routes_evals.router, prefix="/api", tags=["evals"])
 
     return app
 

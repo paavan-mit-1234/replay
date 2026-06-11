@@ -292,6 +292,95 @@ export const listAlerts = () => call<Alert[]>('/api/alerts')
 export const ackAlert = (id: string) =>
   call<void>(`/api/alerts/${id}/ack`, { method: 'POST' })
 
+// --- Eval harness ---
+export interface RunSummary {
+  cases: number
+  passed: number
+  pass_rate: number
+  avg_score: number
+}
+export interface EvalSuite {
+  id: string
+  name: string
+  created_at: string
+  golden_count: number
+  version_count: number
+  latest_pass_rate: number | null
+}
+export interface Golden {
+  id: string
+  input: string
+  reference: string
+  created_at: string
+}
+export interface PromptVersion {
+  id: string
+  version: number
+  template: string
+  system: string
+  model: string
+  created_at: string
+}
+export interface SuiteDetail {
+  id: string
+  name: string
+  goldens: Golden[]
+  versions: PromptVersion[]
+}
+export interface EvalRun {
+  id: string
+  prompt_version_id: string
+  version: number | null
+  status: string
+  summary: RunSummary | null
+  created_at: string
+  finished_at: string | null
+}
+export interface EvalResult {
+  id: string
+  golden_case_id: string
+  input: string
+  reference: string
+  actual: string
+  score: number | null
+  reason: string | null
+  passed: boolean
+  latency_ms: number | null
+}
+export interface RunDetail extends EvalRun {
+  results: EvalResult[]
+}
+
+export const listSuites = () => call<EvalSuite[]>('/api/eval-suites')
+export const createSuite = (name: string) =>
+  call<SuiteDetail>('/api/eval-suites', { method: 'POST', body: JSON.stringify({ name }) })
+export const getSuite = (id: string) => call<SuiteDetail>(`/api/eval-suites/${id}`)
+export const deleteSuite = (id: string) =>
+  call<void>(`/api/eval-suites/${id}`, { method: 'DELETE' })
+export const addGolden = (suiteId: string, input: string, reference: string) =>
+  call<Golden>(`/api/eval-suites/${suiteId}/goldens`, {
+    method: 'POST',
+    body: JSON.stringify({ input, reference }),
+  })
+export const deleteGolden = (suiteId: string, goldenId: string) =>
+  call<void>(`/api/eval-suites/${suiteId}/goldens/${goldenId}`, { method: 'DELETE' })
+export const addVersion = (
+  suiteId: string,
+  body: { template: string; system: string; model: string },
+) =>
+  call<PromptVersion>(`/api/eval-suites/${suiteId}/versions`, {
+    method: 'POST',
+    body: JSON.stringify(body),
+  })
+export const startRun = (promptVersionId: string) =>
+  call<EvalRun>('/api/evals/run', {
+    method: 'POST',
+    body: JSON.stringify({ prompt_version_id: promptVersionId }),
+  })
+export const listRuns = (suiteId: string) =>
+  call<EvalRun[]>(`/api/evals?suite_id=${suiteId}`)
+export const getRun = (runId: string) => call<RunDetail>(`/api/evals/${runId}`)
+
 export const listProviderKeys = () => call<ProviderKey[]>('/api/provider-keys')
 export const addProviderKey = (provider: string, label: string, secret: string) =>
   call<ProviderKey>('/api/provider-keys', {

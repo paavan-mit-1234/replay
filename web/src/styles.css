@@ -115,6 +115,30 @@ body {
   margin-bottom: 28px;
 }
 
+/* Eval harness. */
+.evals {
+  display: grid;
+  grid-template-columns: 260px 1fr;
+  gap: 18px;
+  min-height: 72vh;
+}
+.evals-side {
+  border: var(--border);
+  background: var(--panel);
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+.evals-main {
+  min-width: 0;
+}
+.version-form {
+  border-top: var(--border);
+  margin-top: 12px;
+  padding-top: 12px;
+}
+
 /* Filter bar + segmented control. */
 .filterbar {
   display: flex;
