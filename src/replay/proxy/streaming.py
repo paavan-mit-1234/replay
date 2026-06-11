@@ -12,7 +12,7 @@ import json
 from collections.abc import Iterator
 from typing import Any
 
-from replay.cost.calculator import Usage
+from replay.cost.calculator import Usage, usage_from_openai
 
 
 class SSEParser:
@@ -131,11 +131,10 @@ class OpenAIStreamState(StreamState):
                 self.done = True
         usage = data.get("usage")
         if isinstance(usage, dict):
-            self.input_tokens = int(usage.get("prompt_tokens", 0) or 0)
-            self.output_tokens = int(usage.get("completion_tokens", 0) or 0)
-            details = usage.get("prompt_tokens_details") or {}
-            if isinstance(details, dict):
-                self.cache_read_tokens = int(details.get("cached_tokens", 0) or 0)
+            parsed = usage_from_openai(usage)
+            self.input_tokens = parsed.input_tokens
+            self.output_tokens = parsed.output_tokens
+            self.cache_read_tokens = parsed.cache_read_tokens
 
 
 _STATES: dict[str, type[StreamState]] = {

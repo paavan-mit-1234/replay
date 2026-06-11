@@ -7,6 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from replay.api import (
     routes_assist,
+    routes_budget,
     routes_chat,
     routes_health,
     routes_insights,
@@ -64,6 +65,7 @@ def create_app() -> FastAPI:
     app.include_router(routes_assist.router, prefix="/api", tags=["assist"])
     app.include_router(routes_prompts.router, prefix="/api", tags=["prompts"])
     app.include_router(routes_insights.router, prefix="/api", tags=["insights"])
+    app.include_router(routes_budget.router, prefix="/api", tags=["budget"])
 
     return app
 

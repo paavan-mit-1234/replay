@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { getStats, listRequests, type RequestRow, type Stats } from './api'
+import Budget from './Budget'
 import RequestDetailView from './RequestDetailView'
 
 function fmtCost(v: number | null): string {
@@ -137,6 +138,7 @@ export default function Dashboard() {
           <span className="tag tag--err">error</span> <span className="mono">{error}</span>
         </div>
       )}
+      <Budget />
       <Gauges stats={stats} />
       <div className="section-head">
         <div>

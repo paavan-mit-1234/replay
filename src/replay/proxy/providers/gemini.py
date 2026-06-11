@@ -10,7 +10,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from replay.cost.calculator import Usage
+from replay.cost.calculator import Usage, usage_from_openai
 
 
 class GeminiProvider:
@@ -34,14 +34,7 @@ class GeminiProvider:
         usage = response_body.get("usage")
         if not isinstance(usage, dict):
             return Usage()
-        details = usage.get("prompt_tokens_details") or {}
-        cached = details.get("cached_tokens", 0) if isinstance(details, dict) else 0
-        return Usage(
-            input_tokens=int(usage.get("prompt_tokens", 0) or 0),
-            output_tokens=int(usage.get("completion_tokens", 0) or 0),
-            cache_read_tokens=int(cached or 0),
-            cache_write_tokens=0,
-        )
+        return usage_from_openai(usage)
 
 
 gemini_provider = GeminiProvider()

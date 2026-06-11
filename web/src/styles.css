@@ -115,6 +115,40 @@ body {
   margin-bottom: 28px;
 }
 
+/* Budget panel. */
+.budget-bar {
+  margin-top: 12px;
+  height: 14px;
+  border: var(--border);
+  background: var(--paper);
+}
+.budget-bar__fill {
+  height: 100%;
+  transition: width 0.3s ease;
+}
+.budget-form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 16px;
+}
+.budget-check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+}
+.budget-alert {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border: var(--border);
+  background: var(--paper);
+  padding: 10px 12px;
+  margin-bottom: 14px;
+  font-size: 13px;
+}
+
 .gauge {
   border: var(--border);
   box-shadow: var(--shadow);

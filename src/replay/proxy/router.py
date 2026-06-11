@@ -10,6 +10,7 @@ Capture and cost never fail the caller's request.
 
 from __future__ import annotations
 
+import contextlib
 import json
 import logging
 import time
@@ -20,6 +21,7 @@ from fastapi import APIRouter, Depends, Header, HTTPException, Request, Response
 from fastapi.responses import StreamingResponse
 from starlette.background import BackgroundTask
 
+from replay import budget
 from replay.auth.deps import ProxyContext, get_proxy_context
 from replay.config import get_settings
 from replay.cost.calculator import Usage
@@ -58,13 +60,20 @@ async def _read_body(request: Request) -> tuple[bytes, dict[str, Any]]:
 
 
 async def _safe_capture(**fields: Any) -> None:
-    """Build and persist a requests row. Never raises into the caller's path."""
+    """Build and persist a requests row. Never raises into the caller's path.
+
+    After the row lands, re-evaluate the org's monthly budget so a crossed
+    threshold raises an alert. Both steps are best effort.
+    """
     try:
         row = capture.build_request_row(**fields)
         async with org_session(fields["org_id"]) as session:
             session.add(row)
     except Exception:  # noqa: BLE001
         logger.exception("failed to capture request log")
+        return
+    with contextlib.suppress(Exception):
+        await budget.evaluate_and_alert(fields["org_id"])
 
 
 async def _fetch_secret(provider: Provider, org_id: Any) -> str:
@@ -262,6 +271,7 @@ async def _dispatch(
     body: dict[str, Any],
     ctx: ProxyContext,
 ) -> Response:
+    await budget.enforce(ctx.org_id)
     handler = _stream_proxy if body.get("stream") else _proxy
     return await handler(
         provider=provider,

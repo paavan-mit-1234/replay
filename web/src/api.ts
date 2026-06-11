@@ -237,6 +237,34 @@ export const getInsightStats = () => call<InsightStats>('/api/insights/stats')
 export const generateFingerprint = () =>
   call<{ markdown: string; sampled: number }>('/api/insights/fingerprint', { method: 'POST' })
 
+// --- Budget + alerts ---
+export interface Budget {
+  monthly_limit_usd: number | null
+  alert_threshold_pct: number
+  block_over_limit: boolean
+  month_spend_usd: number
+  usage_pct: number | null
+  status: string // unset, ok, warn, over
+}
+export interface Alert {
+  id: string
+  kind: string
+  payload: Record<string, unknown> | null
+  created_at: string
+  acknowledged_at: string | null
+}
+export interface BudgetInput {
+  monthly_limit_usd: number | null
+  alert_threshold_pct: number
+  block_over_limit: boolean
+}
+export const getBudget = () => call<Budget>('/api/budget')
+export const putBudget = (b: BudgetInput) =>
+  call<Budget>('/api/budget', { method: 'PUT', body: JSON.stringify(b) })
+export const listAlerts = () => call<Alert[]>('/api/alerts')
+export const ackAlert = (id: string) =>
+  call<void>(`/api/alerts/${id}/ack`, { method: 'POST' })
+
 export const listProviderKeys = () => call<ProviderKey[]>('/api/provider-keys')
 export const addProviderKey = (provider: string, label: string, secret: string) =>
   call<ProviderKey>('/api/provider-keys', {
