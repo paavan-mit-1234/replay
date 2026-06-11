@@ -6,11 +6,12 @@ import Landing from './Landing'
 import Login from './Login'
 import Onboarding from './Onboarding'
 import Chat from './Chat'
+import Insights from './Insights'
 import Dashboard from './Dashboard'
 import Playground from './Playground'
 import Settings from './Settings'
 
-type View = 'chat' | 'dashboard' | 'playground' | 'settings'
+type View = 'chat' | 'insights' | 'dashboard' | 'playground' | 'settings'
 
 export default function App() {
   const [session, setSession] = useState<Session | null>(null)
@@ -94,6 +95,12 @@ export default function App() {
               chat
             </button>
             <button
+              className={view === 'insights' ? 'active' : ''}
+              onClick={() => setView('insights')}
+            >
+              insights
+            </button>
+            <button
               className={view === 'dashboard' ? 'active' : ''}
               onClick={() => setView('dashboard')}
             >
@@ -143,6 +150,7 @@ export default function App() {
       </div>
 
       {view === 'chat' && <Chat />}
+      {view === 'insights' && <Insights />}
       {view === 'dashboard' && <Dashboard />}
       {view === 'playground' && <Playground />}
       {view === 'settings' && <Settings />}

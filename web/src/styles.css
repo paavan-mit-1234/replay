@@ -369,17 +369,6 @@ tr.clickrow:hover td {
   border: var(--border);
 }
 
-/* Markdown rendered on a light background (request messages). */
-.md-light {
-  color: var(--ink);
-}
-.md-light strong {
-  color: var(--ink);
-}
-.md-light a {
-  color: var(--cobalt);
-}
-
 /* Landing page. */
 .landing .hero {
   padding: 56px 0 40px;
@@ -712,6 +701,30 @@ tr.clickrow:hover td {
   padding-left: 12px;
   border-left: 3px solid var(--lime);
   opacity: 0.85;
+}
+
+/* The same markdown recolored for paper panels (autopsy, insights). Must win
+   over the dark-background defaults above, hence the double class. */
+.md-output.md-light {
+  color: var(--ink);
+}
+.md-output.md-light strong {
+  color: var(--cobalt);
+}
+.md-output.md-light a {
+  color: var(--cobalt);
+}
+.md-output.md-light code {
+  background: rgba(20, 19, 15, 0.08);
+}
+.md-output.md-light pre {
+  background: var(--ink);
+  border: 2px solid var(--ink);
+  color: var(--paper);
+}
+.md-output.md-light blockquote {
+  border-left-color: var(--cobalt);
+  opacity: 1;
 }
 
 select.input {

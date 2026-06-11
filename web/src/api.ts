@@ -225,6 +225,18 @@ export const savePrompt = (content: string) =>
 export const deleteSavedPrompt = (id: string) =>
   call<void>(`/api/prompts/${id}`, { method: 'DELETE' })
 
+// --- Insights ---
+export interface InsightStats {
+  prompts_sent: number
+  conversations: number
+  good_feedback: number
+  bad_feedback: number
+  days_active: number
+}
+export const getInsightStats = () => call<InsightStats>('/api/insights/stats')
+export const generateFingerprint = () =>
+  call<{ markdown: string; sampled: number }>('/api/insights/fingerprint', { method: 'POST' })
+
 export const listProviderKeys = () => call<ProviderKey[]>('/api/provider-keys')
 export const addProviderKey = (provider: string, label: string, secret: string) =>
   call<ProviderKey>('/api/provider-keys', {
