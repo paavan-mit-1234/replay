@@ -295,6 +295,19 @@ class Message(Base):
     created_at: Mapped[dt.datetime] = _now()
 
 
+class SavedPrompt(Base):
+    """A reusable prompt saved by a user (the prompt library)."""
+
+    __tablename__ = "saved_prompts"
+    __table_args__ = (Index("ix_saved_prompts_user", "org_id", "user_id", "created_at"),)
+
+    id: Mapped[uuid.UUID] = _uuid_pk()
+    org_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
+    user_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
+    content: Mapped[str] = mapped_column(Text, nullable=False)
+    created_at: Mapped[dt.datetime] = _now()
+
+
 # Tenant tables that must carry an org_isolation RLS policy. Used by the
 # migration and by an isolation test that asserts coverage.
 TENANT_TABLES: tuple[str, ...] = (
@@ -311,6 +324,7 @@ TENANT_TABLES: tuple[str, ...] = (
     "alerts",
     "conversations",
     "messages",
+    "saved_prompts",
 )
 
 # Imported names kept for callers and to satisfy linters about re-exports.
@@ -331,5 +345,6 @@ __all__ = [
     "Alert",
     "Conversation",
     "Message",
+    "SavedPrompt",
     "TENANT_TABLES",
 ]

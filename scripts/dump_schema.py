@@ -7,11 +7,11 @@ lets us stand up the same schema on a managed Postgres without local creds.
 
 from __future__ import annotations
 
-from sqlalchemy.schema import CreateIndex, CreateTable
 from sqlalchemy.dialects import postgresql
+from sqlalchemy.schema import CreateIndex, CreateTable
 
-from replay.db.base import Base
 from replay.db import models  # noqa: F401  (registers tables)
+from replay.db.base import Base
 from replay.db.models import TENANT_TABLES
 
 dialect = postgresql.dialect()

@@ -213,6 +213,18 @@ export async function sendChat(
   return { conversationId: convId, text }
 }
 
+// --- Prompt library ---
+export interface SavedPrompt {
+  id: string
+  content: string
+  created_at: string
+}
+export const listSavedPrompts = () => call<SavedPrompt[]>('/api/prompts')
+export const savePrompt = (content: string) =>
+  call<SavedPrompt>('/api/prompts', { method: 'POST', body: JSON.stringify({ content }) })
+export const deleteSavedPrompt = (id: string) =>
+  call<void>(`/api/prompts/${id}`, { method: 'DELETE' })
+
 export const listProviderKeys = () => call<ProviderKey[]>('/api/provider-keys')
 export const addProviderKey = (provider: string, label: string, secret: string) =>
   call<ProviderKey>('/api/provider-keys', {

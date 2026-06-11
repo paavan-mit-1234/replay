@@ -3,14 +3,18 @@ import ReactMarkdown from 'react-markdown'
 import {
   autopsy,
   deleteConversation,
+  deleteSavedPrompt,
   findSimilar,
   getConversation,
   improvePrompt,
   listConversations,
+  listSavedPrompts,
   messageFeedback,
+  savePrompt,
   sendChat,
   type ChatMessage,
   type Conversation,
+  type SavedPrompt,
   type SimilarItem,
 } from './api'
 
@@ -28,6 +32,7 @@ export default function Chat() {
   const [improving, setImproving] = useState(false)
   const [similar, setSimilar] = useState<SimilarItem[]>([])
   const [autopsies, setAutopsies] = useState<Record<string, string>>({})
+  const [saved, setSaved] = useState<SavedPrompt[]>([])
   const [err, setErr] = useState<string | null>(null)
   const endRef = useRef<HTMLDivElement>(null)
 
@@ -39,9 +44,18 @@ export default function Chat() {
     }
   }, [])
 
+  const loadSaved = useCallback(async () => {
+    try {
+      setSaved(await listSavedPrompts())
+    } catch {
+      // ignore
+    }
+  }, [])
+
   useEffect(() => {
     loadConvs()
-  }, [loadConvs])
+    loadSaved()
+  }, [loadConvs, loadSaved])
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -120,6 +134,17 @@ export default function Chat() {
     }
   }
 
+  async function saveCurrent() {
+    const content = input.trim()
+    if (!content) return
+    try {
+      await savePrompt(content)
+      loadSaved()
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : String(e))
+    }
+  }
+
   async function vote(m: ChatMessage, rating: number) {
     const next = m.feedback === rating ? 0 : rating
     setMessages((ms) =>
@@ -173,6 +198,29 @@ export default function Chat() {
             </div>
           ))}
         </div>
+        {saved.length > 0 && (
+          <>
+            <div className="kicker" style={{ marginTop: 14 }}>
+              saved prompts
+            </div>
+            <div className="conv-list" style={{ flex: 'none', maxHeight: 180 }}>
+              {saved.map((p) => (
+                <div key={p.id} className="conv" onClick={() => setInput(p.content)}>
+                  <span className="conv-title">{p.content}</span>
+                  <button
+                    className="conv-del"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      deleteSavedPrompt(p.id).then(loadSaved)
+                    }}
+                  >
+                    ×
+                  </button>
+                </div>
+              ))}
+            </div>
+          </>
+        )}
       </aside>
 
       <section className="chat-main">
@@ -293,6 +341,9 @@ export default function Chat() {
                 </option>
               ))}
             </select>
+            <button className="linklike" onClick={saveCurrent} disabled={!input.trim()}>
+              save
+            </button>
             <button className="btn btn--ghost" onClick={improve} disabled={improving || !input.trim()}>
               {improving ? 'improving…' : 'improve my prompt'}
             </button>
