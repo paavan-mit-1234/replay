@@ -212,7 +212,7 @@ replay --help                 # login, keys, providers, logs, cost
 Replay wears a deliberate, original visual identity, an **"analog signal laboratory":**
 hard edges (zero rounded corners), loud flat color (lime, coral, cobalt, marigold on
 paper and ink), hard offset shadows, and monospaced numerals. No soft gradients, no
-pill buttons, no em dashes. The full system lives in [`BUILD_PROMPT.md`](BUILD_PROMPT.md).
+pill buttons, no em dashes.
 
 ---
 
