@@ -20,6 +20,11 @@ build/
 web/node_modules/
 web/dist/
 
+# editor / tooling
+.claude/
+.vscode/
+.idea/
+
 # os
 .DS_Store
 Thumbs.db
